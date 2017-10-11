@@ -10,20 +10,31 @@ const { graphqlExpress, graphiqlExpress } = require('apollo-server-express');
 
 const schema = require('./schema');
 
-//Starting express here
-const app = express();
+const connectMongo = require('./mongo-connector');
+const start = async () => {
+  const mongo = await connectMongo();
 
-app.use(
-  '/graphiql',
-  graphiqlExpress({
-    endpointURL: '/graphql'
-  })
-);
+  //Starting express here
+  const app = express();
 
-app.use('/graphql', bodyParser.json(), graphqlExpress({ schema }));
+  app.use(
+    '/graphiql',
+    graphiqlExpress({
+      endpointURL: '/graphql'
+    })
+  );
 
-const PORT = process.env.PORT || '3000';
+  app.use(
+    '/graphql',
+    bodyParser.json(),
+    graphqlExpress({ context: { mongo }, schema })
+  );
 
-app.listen(PORT, () => {
-  console.log(`server running on ${PORT}`);
-});
+  const PORT = process.env.PORT || '3000';
+
+  app.listen(PORT, () => {
+    console.log(`server running on ${PORT}`);
+  });
+};
+
+start();
