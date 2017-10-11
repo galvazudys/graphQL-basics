@@ -1,3 +1,5 @@
+const { ObjectID } = require('mongodb');
+
 module.exports = {
   Query: {
     allLinks: async (root, data, { mongo: { Links } }) => {
@@ -10,6 +12,14 @@ module.exports = {
       const response = await Links.insert(newLink);
       console.log(response);
       return Object.assign({ id: response.insertedIds[0] }, newLink);
+    },
+    createVote: async (root, data, { mongo: { Votes }, user }) => {
+      const newVote = {
+        userId: user && user._id,
+        linkId: new ObjectID(data.linkId)
+      };
+      const response = await Votes.insert(newVote);
+      return Object.assign({ id: response.insertedIds[0] }, newVote);
     },
 
     createUser: async (root, data, { mongo: { Users } }) => {
@@ -33,9 +43,26 @@ module.exports = {
     id: root => root._id || root.id,
     postedBy: async ({ postedById }, data, { mongo: { Users } }) => {
       return await Users.findOne({ _id: postedById });
+    },
+    votes: async ({ _id }, data, { mongo: { Votes } }) => {
+      return await Votes.find({ linkId: _id }).toArray();
     }
   },
   User: {
-    id: root => root._id || root.id
+    id: root => root._id || root.id,
+    votes: async ({ _id }, data, { mongo: { Votes } }) => {
+      return await Votes.find({ userId: _id }).toArray();
+    }
+  },
+  Vote: {
+    id: root => root._id || root.id,
+
+    user: async ({ userId }, data, { mongo: { Users } }) => {
+      return await Users.findOne({ _id: userId });
+    },
+
+    link: async ({ linkId }, data, { mongo: { Links } }) => {
+      return await Links.findOne({ _id: linkId });
+    }
   }
 };
